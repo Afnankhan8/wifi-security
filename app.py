@@ -307,41 +307,70 @@ def api_unblock_device(mac_address):
 def family_profiles():
     try:
         profiles = router_manager.get_family_profiles()
+
+        # Get device counts for all profiles at once
+        devices_dict = router_manager.get_all_profiles_devices()
+
+        # Normalize devices_dict keys
+        devices_dict_clean = {}
+        for k, v in devices_dict.items():
+            key_clean = k.replace("\n", " ").replace("\r", "").replace("Enabled", "").replace("Disabled", "").strip()
+            devices_dict_clean[key_clean] = v
+        print(f"[DEBUG] Devices dict cleaned for UI: {devices_dict_clean}")
+
         for profile in profiles:
-            profile_name = profile['name']
-            profile['devices'] = len(router_manager.get_devices_for_profile(profile_name))
+            profile_name = profile['name'].replace("\n", " ").replace("\r", "").strip()
+            profile['devices'] = devices_dict_clean.get(profile_name, 0)
+
+            # Default values
             profile.setdefault('schedules', 0)
             profile.setdefault('bedtime', 0)
             profile.setdefault('blocked_sites', 0)
             profile.setdefault('visit_attempts', 0)
+
         return render_template('family_profiles.html', profiles=profiles)
+
     except Exception as e:
         print(f"[FamilyProfiles] Error: {e}")
         return render_template('family_profiles.html', profiles=[])
-    
-    
-# app.py (add this route)
+
+
+# --- Profile Details Page ---
 @app.route('/family_profiles/<profile_name>')
 @login_required
 @admin_required
 def profile_details(profile_name):
     try:
-        devices = router_manager.get_devices_for_profile(profile_name)
+        profile_name_clean = profile_name.replace("\n", " ").replace("\r", "").strip()
+
+        # Get device count for this profile
+        devices_dict = router_manager.get_all_profiles_devices()
+        devices_dict_clean = {}
+        for k, v in devices_dict.items():
+            key_clean = k.replace("\n", " ").replace("\r", "").replace("Enabled", "").replace("Disabled", "").strip()
+            devices_dict_clean[key_clean] = v
+
+        device_count = devices_dict_clean.get(profile_name_clean, 0)
+
+        # Get the full profile info
         profile_info = None
         profiles = router_manager.get_family_profiles()
         for profile in profiles:
-            if profile['name'] == profile_name:
+            name_clean = profile['name'].replace("\n", " ").replace("\r", "").strip()
+            if name_clean == profile_name_clean:
                 profile_info = profile
                 break
-        
-        return render_template('profile_details.html', 
-                             profile=profile_info, 
-                             devices=devices)
+
+        return render_template(
+            'profile_details.html',
+            profile=profile_info,
+            devices=device_count
+        )
+
     except Exception as e:
-        print(f"Error loading profile details: {e}")
+        print(f"[ProfileDetails] Error loading profile '{profile_name}': {e}")
         flash('Error loading profile details', 'danger')
         return redirect(url_for('family_profiles'))
-
 
 
 # --- Family Profiles API ---
@@ -357,18 +386,21 @@ def api_family_profiles():
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
+
 @app.route('/api/family_profiles/<profile_name>/enable', methods=['POST'])
+@login_required
+@admin_required
 def enable_profile(profile_name):
     success = router_manager.enable_disable_profile(profile_name, enable=True)
     return {"status": "success" if success else "error"}
 
+
 @app.route('/api/family_profiles/<profile_name>/disable', methods=['POST'])
+@login_required
+@admin_required
 def disable_profile(profile_name):
     success = router_manager.enable_disable_profile(profile_name, enable=False)
     return {"status": "success" if success else "error"}
-
-
-
 
 
 @app.route("/api/family_profiles/<profile_name>", methods=["DELETE"])
@@ -381,13 +413,20 @@ def api_delete_family_profile(profile_name):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
 # --- Database Init ---
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
         if not User.query.filter_by(username='admin').first():
             hashed_password = bcrypt.generate_password_hash("Afnan@123").decode('utf-8')
-            db.session.add(User(username='admin', email='admin@example.com', role='admin', password_hash=hashed_password))
+            db.session.add(User(
+                username='admin',
+                email='admin@example.com',
+                role='admin',
+                password_hash=hashed_password
+            ))
             db.session.commit()
         router_manager.ensure_login()
+
     app.run(debug=True)

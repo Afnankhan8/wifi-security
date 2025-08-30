@@ -1,3 +1,4 @@
+import os
 import time
 import threading
 import atexit
@@ -393,99 +394,80 @@ class RouterManager:
             return []
         
         
-        
-        
-        
-        
-        
-        
-        
-        
-# router_manager.py (add these methods to the RouterManager class)
-
-    def enable_disable_profile(self, profile_name, enable=True):
-        """Enable or disable internet access for a specific profile"""
+    def take_screenshot(self, name="screenshot.png"):
+        """Save screenshot into ./screenshots folder for debugging"""
         try:
-            # Navigate to family profiles page
-            self.driver.get(f"{self.base_url}/#/family/profiles")
-            time.sleep(3)
-            
-            # Find the profile by name
-            profiles = self.driver.find_elements(By.CSS_SELECTOR, ".profile-item, tr.profile-row")
-            for profile in profiles:
-                if profile_name in profile.text:
-                    # Look for enable/disable toggle
-                    try:
-                        toggle = profile.find_element(By.CSS_SELECTOR, ".toggle-switch, .enable-toggle")
-                        current_state = toggle.get_attribute("class")
-                        
-                        # Check if we need to change the state
-                        if ("active" in current_state and not enable) or ("active" not in current_state and enable):
-                            toggle.click()
-                            time.sleep(2)  # Wait for changes to apply
-                            return True
-                        else:
-                            return True  # Already in desired state
-                    except:
-                        # If toggle not found, try finding enable/disable buttons
-                        try:
-                            if enable:
-                                enable_btn = profile.find_element(By.CSS_SELECTOR, ".enable-btn, .btn-success")
-                                enable_btn.click()
-                            else:
-                                disable_btn = profile.find_element(By.CSS_SELECTOR, ".disable-btn, .btn-warning")
-                                disable_btn.click()
-                            time.sleep(2)
-                            return True
-                        except:
-                            print(f"Could not find toggle/buttons for profile {profile_name}")
-                            return False
-            return False
+            os.makedirs("screenshots", exist_ok=True)
+            path = os.path.join("screenshots", name if name.endswith(".png") else f"{name}.png")
+            self.driver.save_screenshot(path)
+            print(f"[RouterManager] Saved screenshot {path}")
+            return path
         except Exception as e:
-            print(f"Error toggling profile state: {e}")
-            self.take_screenshot("enable_disable_profile_error")
-            return False
+            print(f"[RouterManager] Failed to take screenshot: {e}")
+            return None
+        
+        
+        
+        
+        
+    
+        
+        
+        
+        
+        
+        
+        
+    def get_all_profiles_devices(self):
+        """
+        Fetch device counts for all family profiles at once.
+        Works for both table-based and div-based layouts.
+        Returns a dictionary: {profile_name: device_count}
+        """
+        devices_dict = {}
 
-    def get_devices_for_profile(self, profile_name):
-        """Get list of devices assigned to a specific profile"""
         try:
-            # Navigate to the profile details
-            self.driver.get(f"{self.base_url}/#/family/profiles")
-            time.sleep(3)
-            
-            # Find and click on the profile
-            profiles = self.driver.find_elements(By.CSS_SELECTOR, ".profile-item, tr.profile-row")
-            for profile in profiles:
-                if profile_name in profile.text:
-                    # Try to find a link or button to view details
-                    try:
-                        details_link = profile.find_element(By.CSS_SELECTOR, "a, .details-btn, .view-btn")
-                        details_link.click()
-                    except:
-                        profile.click()
-                    time.sleep(3)
-                    break
-            
-            # Extract devices from the profile details page
-            device_elements = self.driver.find_elements(By.CSS_SELECTOR, ".device-item, .assigned-device, tr.device-row")
-            devices = []
-            for device in device_elements:
-                try:
-                    name = device.find_element(By.CSS_SELECTOR, ".device-name, .name, td:nth-child(1)").text
-                    mac = device.find_element(By.CSS_SELECTOR, ".device-mac, .mac, td:nth-child(2)").text
-                    devices.append({"name": name, "mac_address": mac})
-                except:
-                    continue
-                    
-            # Navigate back to profiles list
-            self.driver.get(f"{self.base_url}/#/family/profiles")
-            time.sleep(2)
-                    
-            return devices
+            if not self.ensure_login():
+                print("[DEBUG] Not logged in!")
+                return devices_dict
+
+            # Go to Family Profiles page
+            self.driver.get(f"{self.base_url}#/security/family-profiles")
+            time.sleep(3)  # Allow JS to render
+
+            # Use JS to fetch names and device counts reliably
+            script = """
+            var devices = {};
+            var rows = document.querySelectorAll(
+                "pv-table table tbody tr, pv-list.profile-avatar-list .list"
+            );
+            rows.forEach(function(row){
+                try {
+                    var nameElem = row.querySelector("td:first-child, div.text div:first-child");
+                    var countElem = row.querySelector("td:nth-child(2) span, div.device-count");
+                    if(nameElem){
+                        var name = nameElem.innerText.trim();
+                        var count = 0;
+                        if(countElem){
+                            count = parseInt(countElem.innerText.trim()) || 0;
+                        }
+                        devices[name] = count;
+                    }
+                } catch(e){}
+            });
+            return devices;
+            """
+            devices_dict = self.driver.execute_script(script)
+            print(f"[DEBUG] Devices dict: {devices_dict}")
+
         except Exception as e:
-            print(f"Error getting devices for profile: {e}")
-            self.take_screenshot("get_devices_error")
-            return []
+            print(f"[RouterManager] Error fetching profile devices: {e}")
+
+        return devices_dict
+
+
+
+        
     
     
     
@@ -586,49 +568,6 @@ class RouterManager:
             return False
 
 
-    def get_devices_for_profile(self, profile_name, timeout=15):
-        """
-        Fetch the list of devices assigned to a specific family profile.
-        Handles dynamically loaded devices and waits for them to appear in real-time.
-        """
-        if not self.open_profile_details(profile_name):
-            print(f"[RouterManager] Could not open profile '{profile_name}' details.")
-            return []
-
-        devices = []
-        wait = WebDriverWait(self.driver, timeout)
-
-        try:
-            # Wait until at least one device item is present under Assigned Devices
-            device_items = wait.until(lambda d: d.find_elements(By.CSS_SELECTOR, "li, .device-item, .list-item"))
-
-            if not device_items:
-                print(f"[RouterManager] No devices found for profile '{profile_name}'")
-                return []
-
-            # Extract device information
-            for d in device_items:
-                try:
-                    name_elem = d.find_element(By.CSS_SELECTOR, ".device-name, .name, td:nth-child(1)")
-                    mac_elem = d.find_element(By.CSS_SELECTOR, ".device-mac, .mac, td:nth-child(2)")
-                    name = name_elem.text.strip() if name_elem else d.text.strip()
-                    mac = mac_elem.text.strip() if mac_elem else "N/A"
-                    if name:
-                        devices.append({"name": name, "mac_address": mac})
-                except:
-                    # Fallback: just take the text if detailed selectors fail
-                    name = d.text.strip()
-                    if name:
-                        devices.append({"name": name, "mac_address": "N/A"})
-
-            print(f"[RouterManager] Found {len(devices)} devices for profile '{profile_name}'")
-
-        except TimeoutException:
-            print(f"[RouterManager] No assigned devices loaded for profile '{profile_name}' within {timeout}s")
-        except Exception as e:
-            print(f"[RouterManager] Error fetching devices for profile '{profile_name}': {e}")
-
-        return devices
 
 
 
@@ -636,6 +575,7 @@ class RouterManager:
     def fetch_profiles(self):
         return self.get_family_profiles()
 
+# ------------------- TEST BLOCK -------------------
 # ------------------- TEST BLOCK -------------------
 if __name__ == "__main__":
     router = RouterManager()
@@ -652,33 +592,51 @@ if __name__ == "__main__":
         # Connected devices
         print("=== Getting connected devices ===")
         devices = router.get_connected_devices()
-        print(f"Connected Devices: {devices}\n")
+        if devices:
+            for d in devices:
+                print(f" - {d.get('name','Unknown')} | MAC: {d.get('mac_address','N/A')} | IP: {d.get('ipv4','N/A')}")
+        else:
+            print("No devices found.\n")
         
         # Family profiles
-        print("=== Getting family profiles ===")
+        print("\n=== Getting family profiles ===")
         profiles = router.get_family_profiles()
-        for p in profiles:
-            # Fetch assigned devices for each profile
-            devices_for_profile = router.get_devices_for_profile(p['name'])
-            p['assigned_devices'] = devices_for_profile
-            print(f"Profile: {p['name']} | Status: {p['status']} | Devices: {devices_for_profile}")
-        print()
-        
-        # Pick a profile
-        profile_name = "Afnan"  # <-- change if your router uses a different name
-        print(f"=== Opening profile details for '{profile_name}' ===")
+        if not profiles:
+            print("No family profiles found.\n")
+        else:
+            for p in profiles:
+                # Fetch assigned devices for each profile
+                devices_for_profile = router.get_devices_for_profile(p['name'])
+                p['assigned_devices'] = devices_for_profile
+
+                print(f"\nProfile: {p['name']} | Status: {p['status']} | Device Count: {len(devices_for_profile)}")
+                if devices_for_profile:
+                    for d in devices_for_profile:
+                        print(f"   - {d.get('name', 'Unknown')} ({d.get('mac_address', 'No MAC')})")
+                else:
+                    print("   (No devices assigned)")
+
+        # Pick a profile to test internet toggle
+        profile_name = "Afnan"  # Replace with your actual profile name
+        print(f"\n=== Opening profile details for '{profile_name}' ===")
         if router.open_profile_details(profile_name):
             print(f"✅ Successfully navigated to profile details for '{profile_name}'\n")
             
-            # Enable/Disable Internet
+            # Enable Internet
             print(f"=== Enabling internet for '{profile_name}' ===")
             success = router.toggle_internet_in_profile(profile_name, enable=True)
             print(f"Internet access for profile '{profile_name}' set to Enabled: {success}\n")
+            
+            # Disable Internet
+            print(f"=== Disabling internet for '{profile_name}' ===")
+            success = router.toggle_internet_in_profile(profile_name, enable=False)
+            print(f"Internet access for profile '{profile_name}' set to Disabled: {success}\n")
         else:
             print(f"❌ Failed to open profile details for '{profile_name}'\n")
         
         print("=== Debugging completed ===")
         print("Check the saved screenshots and HTML files for verification.")
+
     else:
         print("✗ Failed to login to router")
     
