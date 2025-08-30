@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8 text-center">
+        <h1 class="display-4 mb-4">Airtel Airfiber Wi-Fi Management</h1>
+        <p class="lead mb-5">Advanced network monitoring and device management for your Airtel Airfiber connection</p>
+        
+        {% if not current_user.is_authenticated %}
+            <div class="d-grid gap-3 d-sm-flex justify-content-sm-center">
+                <a href="{{ url_for('login') }}" class="btn btn-primary btn-lg px-4 gap-3">Login</a>
+                <a href="{{ url_for('register') }}" class="btn btn-outline-secondary btn-lg px-4">Register</a>
+            </div>
+        {% else %}
+            <div class="d-grid gap-3 d-sm-flex justify-content-sm-center">
+                <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-lg px-4 gap-3">Go to Dashboard</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row mt-5">
+    <div class="col-lg-4 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-wifi text-primary" style="font-size: 2rem;"></i>
+                <h3 class="card-title mt-3">Real-time Monitoring</h3>
+                <p class="card-text">Track all connected devices in real-time with detailed information about each device.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-shield-lock text-primary" style="font-size: 2rem;"></i>
+                <h3 class="card-title mt-3">Security Management</h3>
+                <p class="card-text">Block or unblock devices with a single click to maintain network security.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-bell text-primary" style="font-size: 2rem;"></i>
+                <h3 class="card-title mt-3">Instant Alerts</h3>
+                <p class="card-text">Receive notifications for new devices, suspicious activities, and more.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Alert Management</h2>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-outline-primary">Back to Dashboard</a>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Send New Alert</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('admin_alerts') }}">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="mb-3">
+                        {{ form.title.label(class="form-label") }}
+                        {{ form.title(class="form-control") }}
+                        {% for error in form.title.errors %}
+                            <div class="invalid-feedback d-block">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.message.label(class="form-label") }}
+                        {{ form.message(class="form-control", rows=4) }}
+                        {% for error in form.message.errors %}
+                            <div class="invalid-feedback d-block">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.alert_type.label(class="form-label") }}
+                        {{ form.alert_type(class="form-select") }}
+                        {% for error in form.alert_type.errors %}
+                            <div class="invalid-feedback d-block">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.send_to.label(class="form-label") }}
+                        {{ form.send_to(class="form-select") }}
+                        {% for error in form.send_to.errors %}
+                            <div class="invalid-feedback d-block">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="mb-3" id="customer-select-container" style="display: none;">
+                        {{ form.customer_id.label(class="form-label") }}
+                        {{ form.customer_id(class="form-select select2") }}
+                        {% for error in form.customer_id.errors %}
+                            <div class="invalid-feedback d-block">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="d-grid">
+                        {{ form.submit(class="btn btn-primary") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">All Alerts</h5>
+                    <span class="badge bg-primary">{{ alerts|length }} alerts</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="alert-list">
+                    {% for alert in alerts %}
+                        <div class="alert alert-{{ alert.alert_type }} mb-2">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6 class="alert-heading">{{ alert.title }}</h6>
+                                    <p class="mb-1">{{ alert.message }}</p>
+                                    <small class="text-muted">
+                                        Sent to: {{ alert.user.username }} | {{ alert.created_at.strftime('%Y-%m-%d %H:%M') }}
+                                    </small>
+                                </div>
+                                <div>
+                                    <a href="{{ url_for('delete_alert', alert_id=alert.id) }}" class="btn btn-sm btn-outline-danger">Delete</a>
+                                </div>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            No alerts found
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const sendToSelect = document.getElementById('send_to');
+        const customerSelectContainer = document.getElementById('customer-select-container');
+        
+        sendToSelect.addEventListener('change', function() {
+            if (this.value === 'specific') {
+                customerSelectContainer.style.display = 'block';
+            } else {
+                customerSelectContainer.style.display = 'none';
+            }
+        });
+        
+        // Initialize based on current value
+        if (sendToSelect.value === 'specific') {
+            customerSelectContainer.style.display = 'block';
+        }
+    });
+</script>
+{% endblock %}
+{% endblock %}

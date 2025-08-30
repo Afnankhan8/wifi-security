@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+<link href="{{ url_for('static', filename='css/dashboard.css') }}" rel="stylesheet">
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-summary">
+    <h2 class="mb-4">Dashboard Overview</h2>
+    
+    <div class="row">
+        <div class="col-md-3">
+            <div class="card dashboard-card card-devices">
+                <div class="card-body">
+                    <div class="card-icon">
+                        <i class="bi bi-devices text-primary"></i>
+                    </div>
+                    <h5 class="card-title">Total Devices</h5>
+                    <div class="card-value" id="total-devices">{{ total_devices }}</div>
+                    <p class="card-text">All devices that have connected to your network</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card dashboard-card card-online">
+                <div class="card-body">
+                    <div class="card-icon">
+                        <i class="bi bi-wifi text-success"></i>
+                    </div>
+                    <h5 class="card-title">Online Devices</h5>
+                    <div class="card-value" id="online-devices">{{ online_devices }}</div>
+                    <p class="card-text">Currently connected to your network</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card dashboard-card card-blocked">
+                <div class="card-body">
+                    <div class="card-icon">
+                        <i class="bi bi-shield-lock text-warning"></i>
+                    </div>
+                    <h5 class="card-title">Blocked Devices</h5>
+                    <div class="card-value" id="blocked-devices">{{ blocked_devices }}</div>
+                    <p class="card-text">Restricted from accessing your network</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- NEW Family Profiles Card -->
+        <div class="col-md-3">
+            <div class="card dashboard-card card-family">
+                <div class="card-body">
+                    <div class="card-icon">
+                        <i class="bi bi-people text-info"></i>
+                    </div>
+                    <h5 class="card-title">Family Profiles</h5>
+                    <div class="card-value" id="family-profiles">{{ family_profiles }}</div>
+                    <p class="card-text">Total registered family profiles</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Devices Status</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="devicesChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Recent Alerts</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert-list">
+                    {% for alert in alerts %}
+                        <div class="alert alert-{{ alert.alert_type }} alert-item {% if not alert.is_read %}unread{% endif %}" 
+                             data-alert-id="{{ alert.id }}">
+                            <h6 class="alert-heading">{{ alert.title }}</h6>
+                            <p class="mb-1">{{ alert.message }}</p>
+                            <small class="text-muted">{{ alert.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            No recent alerts
+                        </div>
+                    {% endfor %}
+                </div>
+                <a href="{{ url_for('admin_alerts') }}" class="btn btn-outline-primary btn-sm mt-2">View All Alerts</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Recent Activity</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="activityChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

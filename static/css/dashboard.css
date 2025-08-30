@@ -1,0 +1,87 @@
+/* Dashboard specific styles */
+.dashboard-summary {
+    margin-bottom: 30px;
+}
+
+.dashboard-card {
+    border-radius: 10px;
+    margin-bottom: 20px;
+    transition: all 0.3s ease;
+}
+
+.dashboard-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+}
+
+.card-devices {
+    border-left: 4px solid #007bff;
+}
+
+.card-online {
+    border-left: 4px solid #28a745;
+}
+
+.card-blocked {
+    border-left: 4px solid #ffc107;
+}
+
+.activity-feed {
+    list-style: none;
+    padding: 0;
+}
+
+.activity-feed li {
+    padding: 10px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.activity-feed li:last-child {
+    border-bottom: none;
+}
+
+.activity-feed .time {
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+
+.device-table tr {
+    transition: background-color 0.2s;
+}
+
+.device-table tr:hover {
+    background-color: #f8f9fa;
+}
+
+.status-indicator {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 5px;
+}
+
+.status-online {
+    background-color: #28a745;
+}
+
+.status-offline {
+    background-color: #dc3545;
+}
+
+.status-blocked {
+    background-color: #ffc107;
+}
+
+.chart-container {
+    position: relative;
+    height: 300px;
+    margin-bottom: 20px;
+}
+
+.alert-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    font-size: 0.6rem;
+}

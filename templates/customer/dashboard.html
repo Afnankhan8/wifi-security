@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+<link href="{{ url_for('static', filename='css/dashboard.css') }}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-summary">
+    <h2 class="mb-4">Customer Dashboard</h2>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Welcome, {{ current_user.username }}</h5>
+                </div>
+                <div class="card-body">
+                    <p>This is your personal dashboard where you can view alerts and notifications about your network connection.</p>
+                    <p>If you have any issues with your connection, please contact your network administrator.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Your Devices</h5>
+                </div>
+                <div class="card-body">
+                    {% if current_user.devices %}
+                        <ul class="list-group">
+                            {% for device in current_user.devices %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    {{ device.device_name or 'Unknown Device' }}
+                                    <span class="badge bg-{% if device.is_blocked %}danger{% else %}success{% endif %}">
+                                        {% if device.is_blocked %}Blocked{% else %}Allowed{% endif %}
+                                    </span>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <div class="alert alert-info">
+                            No devices registered to your account
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Recent Alerts</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert-list">
+                    {% for alert in alerts %}
+                        <div class="alert alert-{{ alert.alert_type }} alert-item {% if not alert.is_read %}unread{% endif %}" 
+                             data-alert-id="{{ alert.id }}">
+                            <h6 class="alert-heading">{{ alert.title }}</h6>
+                            <p class="mb-1">{{ alert.message }}</p>
+                            <small class="text-muted">{{ alert.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            No recent alerts
+                        </div>
+                    {% endfor %}
+                </div>
+                <a href="{{ url_for('customer_alerts') }}" class="btn btn-outline-primary btn-sm mt-2">View All Alerts</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
