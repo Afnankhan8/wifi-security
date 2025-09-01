@@ -23,14 +23,13 @@
                         <th>IP Address</th>
                         <th>Status</th>
                         <th>Last Seen</th>
-                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for device in devices %}
                         <tr>
                             <td>{{ device.device_name or 'Unknown' }}</td>
-                            <td>{{ device.mac_address }}</td>
+                            <td><code>{{ device.mac_address }}</code></td>
                             <td>{{ device.ip_address or 'N/A' }}</td>
                             <td>
                                 <span class="device-status {% if device.is_blocked %}blocked{% elif device.is_online %}online{% else %}offline{% endif %}"></span>
