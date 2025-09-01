@@ -2,124 +2,264 @@
 
 {% block extra_css %}
 <link href="{{ url_for('static', filename='css/dashboard.css') }}" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+<style>
+/* Attractive gradient background */
+body {
+    /* background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 50%, #fad0c4 100%); */
+    min-height: 100vh;
+    color: #333;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Card Icons */
+.dashboard-card i {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+}
+
+/* Card styling with vibrant gradients */
+.card {
+    border-radius: 15px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+    color: #fff;
+}
+
+/* Card headers */
+.card-header {
+    font-weight: bold;
+    border-bottom: 1px solid rgba(255,255,255,0.2);
+}
+
+/* Top Cards */
+.card.total-devices { background: linear-gradient(135deg, #6a11cb, #2575fc); }
+.card.online-devices { background: linear-gradient(135deg, #28a745, #71dd8a); color: #fff; }
+.card.blocked-devices { background: linear-gradient(135deg, #ffc107, #ffec6e); color: #333; }
+
+/* Card Titles */
+.card h3 { font-weight: bold; }
+
+/* Card Paragraphs */
+.card p { font-size: 0.85rem; }
+
+/* Alert Styles */
+.alert-list .alert {
+    border-radius: 8px;
+    margin-bottom: 10px;
+    padding: 0.7rem 1rem;
+    color: #333;
+}
+.alert-list .alert.unread { font-weight: bold; background: rgba(255,255,255,0.7); }
+
+/* Chart Container */
+.chart-container {
+    position: relative;
+    width: 100%;
+    height: 300px;
+}
+
+/* Buttons */
+.btn-outline-primary {
+    border-color: #007bff;
+    color: #007bff;
+}
+.btn-outline-primary:hover {
+    background-color: #007bff;
+    color: #fff;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .dashboard-card i { font-size: 2rem; }
+    .dashboard-card h3 { font-size: 1.4rem; }
+}
+</style>
 {% endblock %}
 
 {% block extra_js %}
 <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 {% endblock %}
 
 {% block content %}
-<div class="dashboard-summary">
-    <h2 class="mb-4">Dashboard Overview</h2>
-    
-    <div class="row">
-        <div class="col-md-3">
-            <div class="card dashboard-card card-devices">
+<div class="container-fluid mt-4">
+    <h2 class="text-center fw-bold text-white mb-4">Dashboard Overview</h2>
+
+    <!-- Top Cards Row -->
+    <div class="row g-4">
+        <!-- Total Devices -->
+        <div class="col-12 col-md-4">
+            <div class="card text-center shadow-lg dashboard-card h-100 total-devices">
                 <div class="card-body">
-                    <div class="card-icon">
-                        <i class="bi bi-devices text-primary"></i>
-                    </div>
-                    <h5 class="card-title">Total Devices</h5>
-                    <div class="card-value" id="total-devices">{{ total_devices }}</div>
-                    <p class="card-text">All devices that have connected to your network</p>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-md-3">
-            <div class="card dashboard-card card-online">
-                <div class="card-body">
-                    <div class="card-icon">
-                        <i class="bi bi-wifi text-success"></i>
-                    </div>
-                    <h5 class="card-title">Online Devices</h5>
-                    <div class="card-value" id="online-devices">{{ online_devices }}</div>
-                    <p class="card-text">Currently connected to your network</p>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-md-3">
-            <div class="card dashboard-card card-blocked">
-                <div class="card-body">
-                    <div class="card-icon">
-                        <i class="bi bi-shield-lock text-warning"></i>
-                    </div>
-                    <h5 class="card-title">Blocked Devices</h5>
-                    <div class="card-value" id="blocked-devices">{{ blocked_devices }}</div>
-                    <p class="card-text">Restricted from accessing your network</p>
+                    <i class="bi bi-devices fs-1 mb-2"></i>
+                    <h5>Total Devices</h5>
+                    <h3 id="total-devices">{{ total_devices }}</h3>
+                    <p class="small">All devices connected</p>
                 </div>
             </div>
         </div>
 
-        <!-- NEW Family Profiles Card -->
-        <div class="col-md-3">
-            <div class="card dashboard-card card-family">
+        <!-- Online Devices -->
+        <div class="col-12 col-md-4">
+            <div class="card text-center shadow-lg dashboard-card h-100 online-devices">
                 <div class="card-body">
-                    <div class="card-icon">
-                        <i class="bi bi-people text-info"></i>
-                    </div>
-                    <h5 class="card-title">Family Profiles</h5>
-                    <div class="card-value" id="family-profiles">{{ family_profiles }}</div>
-                    <p class="card-text">Total registered family profiles</p>
+                    <i class="bi bi-wifi fs-1 mb-2"></i>
+                    <h5>Online Devices</h5>
+                    <h3 id="online-devices">{{ online_devices }}</h3>
+                    <p class="small">Currently connected</p>
                 </div>
             </div>
         </div>
-    </div>
-</div>
 
-<div class="row mt-4">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">Devices Status</h5>
-            </div>
-            <div class="card-body">
-                <div class="chart-container">
-                    <canvas id="devicesChart"></canvas>
+       
+       <div class="col-12 col-md-4">
+            <div class="card text-center shadow-lg dashboard-card h-100 blocked-devices">
+                <div class="card-body">
+                    <i class="bi bi-shield-lock fs-1 mb-2"></i>
+                    <h5>Blocked Devices</h5>
+                    <h3 id="blocked-devices">{{ blocked_devices }}</h3>
+                    <p class="small">Restricted from network</p>
                 </div>
             </div>
         </div>
     </div>
-    
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">Recent Alerts</h5>
+
+    <!-- <!-Charts & Alerts Row -->  
+    <div class="row mt-4 g-4">
+        <!-- Devices Doughnut Chart -->
+        <div class="col-lg-6 col-12">
+            <div class="card shadow-sm h-100" style="background: #6c5ce7;">
+                <div class="card-header bg-dark text-white">Devices Status</div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="devicesChart"></canvas>
+                    </div>
+                </div>
             </div>
-            <div class="card-body">
-                <div class="alert-list">
+        </div>
+
+        <!-- Recent Alerts -->
+        <div class="col-lg-6 col-12">
+            <div class="card shadow-sm h-100" style="background: #fd79a8;">
+                <div class="card-header bg-dark text-white">Recent Alerts</div>
+                <div class="card-body alert-list">
                     {% for alert in alerts %}
-                        <div class="alert alert-{{ alert.alert_type }} alert-item {% if not alert.is_read %}unread{% endif %}" 
+                        <div class="alert alert-{{ alert.alert_type }} {% if not alert.is_read %}fw-bold{% endif %}" 
                              data-alert-id="{{ alert.id }}">
-                            <h6 class="alert-heading">{{ alert.title }}</h6>
-                            <p class="mb-1">{{ alert.message }}</p>
-                            <small class="text-muted">{{ alert.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                            <h6 class="mb-1">{{ alert.title }}</h6>
+                            <p class="mb-0">{{ alert.message }}</p>
+                            <small class="text-white">{{ alert.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
                         </div>
                     {% else %}
-                        <div class="alert alert-info">
-                            No recent alerts
-                        </div>
+                        <div class="alert alert-light text-dark">No recent alerts</div>
                     {% endfor %}
                 </div>
-                <a href="{{ url_for('admin_alerts') }}" class="btn btn-outline-primary btn-sm mt-2">View All Alerts</a>
+                <div class="card-footer text-center">
+                    <a href="{{ url_for('admin_alerts') }}" class="btn btn-outline-primary btn-sm">View All Alerts</a>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="row mt-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">Recent Activity</h5>
-            </div>
-            <div class="card-body">
-                <div class="chart-container">
-                    <canvas id="activityChart"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+<!-- Chart & Live Update Scripts -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+
+    // Initialize chart
+    function initChart(online, blocked, offline){
+        const ctxDevices = document.getElementById('devicesChart').getContext('2d');
+        window.devicesChart = new Chart(ctxDevices, {
+            type: 'doughnut',
+            data: {
+                labels: ['Online', 'Blocked', 'Offline'],
+                datasets: [{
+                    data: [online, blocked, offline],
+                    backgroundColor: ['#28a745','#ffc107','#dc3545']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: {color:'#fff'} },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => {
+                                const value = ctx.raw || 0;
+                                const totalVal = ctx.dataset.data.reduce((a,b)=>a+b,1);
+                                const perc = Math.round((value/totalVal)*100);
+                                return `${ctx.label}: ${value} (${perc}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Initial chart
+    const total = parseInt(document.getElementById('total-devices').textContent) || 0;
+    const online = parseInt(document.getElementById('online-devices').textContent) || 0;
+    const blocked = parseInt(document.getElementById('blocked-devices').textContent) || 0;
+    const offline = total - online - blocked;
+    initChart(online, blocked, offline);
+
+    // Function to refresh dashboard stats
+    function refreshDashboard() {
+        fetch('/api/dashboard/stats')
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById('total-devices').textContent = data.total_devices;
+            document.getElementById('online-devices').textContent = data.online_devices;
+            document.getElementById('blocked-devices').textContent = data.blocked_devices;
+
+            const offlineDevices = data.total_devices - data.online_devices - data.blocked_devices;
+            if(window.devicesChart){
+                window.devicesChart.data.datasets[0].data = [
+                    data.online_devices,
+                    data.blocked_devices,
+                    offlineDevices
+                ];
+                window.devicesChart.update();
+            }
+        });
+    }
+
+    // Auto-refresh every 5 seconds
+    setInterval(refreshDashboard, 5000);
+});
+
+
+// Blocked device 
+
+document.addEventListener('DOMContentLoaded', function() {
+    let previousOnline = parseInt(document.getElementById('online-devices').textContent) || 0;
+
+    function refreshDashboard() {
+        fetch('/api/dashboard/stats')
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById('total-devices').textContent = data.total_devices;
+
+            // Online devices always show current value
+            document.getElementById('online-devices').textContent = data.online_devices;
+
+            // If online_devices is 0, assign previous value to blocked devices
+            if (data.online_devices === 0) {
+                document.getElementById('blocked-devices').textContent = previousOnline;
+            } else {
+                document.getElementById('blocked-devices').textContent = data.blocked_devices;
+                previousOnline = data.online_devices; // update previous online
+            }
+        });
+    }
+
+    // Refresh every 5 seconds
+    setInterval(refreshDashboard, 5000);
+});
+
+
+</script>
 {% endblock %}

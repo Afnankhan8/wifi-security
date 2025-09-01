@@ -6,16 +6,7 @@ from datetime import datetime, timezone
 db = SQLAlchemy()
 
 
-
-
-
-
-
-
-
-
-
-
+# ---------------- NETWORK SESSION ----------------
 class NetworkSession(db.Model):
     """
     NetworkSession model to track user/device network activity.
@@ -28,37 +19,29 @@ class NetworkSession(db.Model):
     session_start = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     session_end = db.Column(db.DateTime, nullable=True)  # None if session is ongoing
 
-    # Relationships
     user = db.relationship('User', backref=db.backref('network_sessions', lazy=True))
     device = db.relationship('Device', backref=db.backref('network_sessions', lazy=True))
 
 
-# ---------------- EXISTING MODELS ----------------
+# ---------------- USER ----------------
 class User(UserMixin, db.Model):
-    """
-    User model for authentication and role-based access.
-    """
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
-    password_hash = db.Column(db.String(128))
+    password_hash = db.Column(db.String(128), nullable=False)
     role = db.Column(db.String(20), nullable=False)  # 'admin' or 'customer'
     is_active = db.Column(db.Boolean, default=True)
     date_created = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
-    
+
     def set_password(self, password):
-        """Hashes the given password and stores it."""
         self.password_hash = generate_password_hash(password)
-    
+
     def check_password(self, password):
-        """Checks if the given password matches the stored hash."""
         return check_password_hash(self.password_hash, password)
 
 
+# ---------------- DEVICE ----------------
 class Device(db.Model):
-    """
-    Device model to store information about connected network devices.
-    """
     id = db.Column(db.Integer, primary_key=True)
     mac_address = db.Column(db.String(17), unique=True, nullable=False)
     device_name = db.Column(db.String(100))
@@ -67,49 +50,62 @@ class Device(db.Model):
     is_online = db.Column(db.Boolean, default=True)
     first_seen = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     last_seen = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
 
-    # Relationship to User
     user = db.relationship('User', backref=db.backref('devices', lazy=True))
 
+    # ⚡ Helper: get profile names directly
+    @property
+    def profile_names(self):
+        return [profile.name for profile in self.profiles]
 
+
+# ---------------- ALERT ----------------
 class Alert(db.Model):
-    """
-    Alert model for system notifications (e.g., new device, device disconnected).
-    """
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(100), nullable=False)
     message = db.Column(db.Text, nullable=False)
-    alert_type = db.Column(db.String(20))  # 'info', 'warning', 'danger', 'success'
+    alert_type = db.Column(db.String(20), default='info')  # 'info', 'warning', 'danger', 'success'
     is_read = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
-    # Relationship to User
     user = db.relationship('User', backref=db.backref('alerts', lazy=True))
 
 
-# ---------------- NEW MODELS FOR FAMILY PROFILES ----------------
+# ---------------- FAMILY PROFILE ----------------
+# Many-to-many link table
+profile_devices = db.Table(
+    'profile_devices',
+    db.Column('profile_id', db.Integer, db.ForeignKey('family_profile.id'), primary_key=True),
+    db.Column('device_id', db.Integer, db.ForeignKey('device.id'), primary_key=True)
+)
+
+
 class FamilyProfile(db.Model):
-    """
-    Family Profile model for grouping devices.
-    """
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(80), nullable=False)
-    enabled = db.Column(db.Boolean, default=True)  # True = Internet enabled
+    name = db.Column(db.String(80), nullable=False, unique=True)
+    enabled = db.Column(db.Boolean, default=True)
     date_created = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
-    # Relationship to link devices via ProfileDevice
-    devices = db.relationship('ProfileDevice', backref='profile', lazy=True)
+    # Many-to-many relationship with Device
+    devices = db.relationship(
+        'Device',
+        secondary=profile_devices,
+        backref=db.backref('profiles', lazy=True)
+    )
 
 
-class ProfileDevice(db.Model):
-    """
-    Association table to link devices to family profiles (many-to-many).
-    """
-    id = db.Column(db.Integer, primary_key=True)
-    profile_id = db.Column(db.Integer, db.ForeignKey('family_profile.id'), nullable=False)
-    device_id = db.Column(db.Integer, db.ForeignKey('device.id'), nullable=False)
-
-    # Relationship to access the Device object
-    device = db.relationship('Device', backref=db.backref('profiles', lazy=True))
+# ---------------- OPTIONAL: HELPER FUNCTION ----------------
+def create_admin_if_not_exists(app):
+    from werkzeug.security import generate_password_hash
+    with app.app_context():
+        if not User.query.filter_by(username='admin').first():
+            admin = User(
+                username='admin',
+                email='admin@example.com',
+                role='admin',
+                password_hash=generate_password_hash("Admin@123")
+            )
+            db.session.add(admin)
+            db.session.commit()

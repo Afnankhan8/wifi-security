@@ -1,21 +1,106 @@
 {% extends "base.html" %}
 
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+/* General Page Styling */
+h2 {
+    color: #0072ff;
+    font-weight: 700;
+}
+
+/* Card Styling */
+.card {
+    border-radius: 15px;
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+}
+
+/* Card Headers */
+.card-header {
+    font-weight: 600;
+    font-size: 1rem;
+    background: linear-gradient(135deg, #6a11cb, #2575fc);
+    color: #fff;
+}
+
+/* Form Styling */
+.form-control, .form-select {
+    border-radius: 8px;
+}
+.btn-primary {
+    border-radius: 50px;
+    transition: all 0.2s;
+}
+.btn-primary:hover {
+    background: #2575fc;
+    border-color: #2575fc;
+}
+
+/* Alert List */
+.alert-list .alert {
+    border-radius: 12px;
+    padding: 1rem;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.alert-list .alert:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+}
+.alert-heading {
+    font-weight: 600;
+    font-size: 1rem;
+    margin-bottom: 0.25rem;
+}
+.alert-info-custom {
+    background: #e3f2fd;
+    color: #0d6efd;
+}
+
+/* Badges */
+.badge {
+    font-weight: 500;
+    border-radius: 50px;
+    padding: 0.35em 0.75em;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .d-flex.justify-content-between {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    .alert-heading {
+        font-size: 0.9rem;
+    }
+    .badge {
+        font-size: 0.75rem;
+    }
+}
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
     <h2>Alert Management</h2>
-    <a href="{{ url_for('dashboard') }}" class="btn btn-outline-primary">Back to Dashboard</a>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-outline-primary mt-2 mt-md-0">Back to Dashboard</a>
 </div>
 
-<div class="row">
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-header">
+<div class="row g-4">
+    <!-- Send New Alert -->
+    <div class="col-lg-4 col-md-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-gradient-primary text-white">
                 <h5 class="mb-0">Send New Alert</h5>
             </div>
             <div class="card-body">
                 <form method="POST" action="{{ url_for('admin_alerts') }}">
                     {{ form.hidden_tag() }}
-                    
+
                     <div class="mb-3">
                         {{ form.title.label(class="form-label") }}
                         {{ form.title(class="form-control") }}
@@ -23,7 +108,7 @@
                             <div class="invalid-feedback d-block">{{ error }}</div>
                         {% endfor %}
                     </div>
-                    
+
                     <div class="mb-3">
                         {{ form.message.label(class="form-label") }}
                         {{ form.message(class="form-control", rows=4) }}
@@ -31,7 +116,7 @@
                             <div class="invalid-feedback d-block">{{ error }}</div>
                         {% endfor %}
                     </div>
-                    
+
                     <div class="mb-3">
                         {{ form.alert_type.label(class="form-label") }}
                         {{ form.alert_type(class="form-select") }}
@@ -39,15 +124,15 @@
                             <div class="invalid-feedback d-block">{{ error }}</div>
                         {% endfor %}
                     </div>
-                    
+
                     <div class="mb-3">
                         {{ form.send_to.label(class="form-label") }}
-                        {{ form.send_to(class="form-select") }}
+                        {{ form.send_to(class="form-select", id="send_to") }}
                         {% for error in form.send_to.errors %}
                             <div class="invalid-feedback d-block">{{ error }}</div>
                         {% endfor %}
                     </div>
-                    
+
                     <div class="mb-3" id="customer-select-container" style="display: none;">
                         {{ form.customer_id.label(class="form-label") }}
                         {{ form.customer_id(class="form-select select2") }}
@@ -55,7 +140,7 @@
                             <div class="invalid-feedback d-block">{{ error }}</div>
                         {% endfor %}
                     </div>
-                    
+
                     <div class="d-grid">
                         {{ form.submit(class="btn btn-primary") }}
                     </div>
@@ -63,62 +148,65 @@
             </div>
         </div>
     </div>
-    
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header">
+
+    <!-- All Alerts -->
+    <div class="col-lg-8 col-md-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-gradient-primary text-white">
                 <div class="d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">All Alerts</h5>
-                    <span class="badge bg-primary">{{ alerts|length }} alerts</span>
+                    <span class="badge bg-light text-dark">{{ alerts|length }} alerts</span>
                 </div>
             </div>
-            <div class="card-body">
-                <div class="alert-list">
-                    {% for alert in alerts %}
-                        <div class="alert alert-{{ alert.alert_type }} mb-2">
-                            <div class="d-flex justify-content-between">
-                                <div>
-                                    <h6 class="alert-heading">{{ alert.title }}</h6>
-                                    <p class="mb-1">{{ alert.message }}</p>
-                                    <small class="text-muted">
-                                        Sent to: {{ alert.user.username }} | {{ alert.created_at.strftime('%Y-%m-%d %H:%M') }}
-                                    </small>
-                                </div>
-                                <div>
-                                    <a href="{{ url_for('delete_alert', alert_id=alert.id) }}" class="btn btn-sm btn-outline-danger">Delete</a>
-                                </div>
+            <div class="card-body alert-list">
+                {% for alert in alerts %}
+                    <div class="alert alert-{{ alert.alert_type }} mb-3">
+                        <div class="d-flex justify-content-between flex-wrap align-items-start">
+                            <div>
+                                <h6 class="alert-heading">{{ alert.title }}</h6>
+                                <p class="mb-1">{{ alert.message }}</p>
+                                <small class="text-muted">
+                                    Sent to: {{ alert.user.username if alert.user else "All" }} | {{ alert.created_at.strftime('%Y-%m-%d %H:%M') }}
+                                </small>
+                            </div>
+                            <div class="mt-2 mt-md-0">
+                                <!-- Delete Alert Form -->
+                                <form method="POST" action="{{ url_for('delete_alert', alert_id=alert.id) }}" style="display:inline;">
+                                    {{ delete_form.hidden_tag() }}  <!-- fixed CSRF -->
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                </form>
                             </div>
                         </div>
-                    {% else %}
-                        <div class="alert alert-info">
-                            No alerts found
-                        </div>
-                    {% endfor %}
-                </div>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info alert-info-custom">
+                        No alerts found
+                    </div>
+                {% endfor %}
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
 
 {% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const sendToSelect = document.getElementById('send_to');
-        const customerSelectContainer = document.getElementById('customer-select-container');
-        
-        sendToSelect.addEventListener('change', function() {
-            if (this.value === 'specific') {
-                customerSelectContainer.style.display = 'block';
-            } else {
-                customerSelectContainer.style.display = 'none';
-            }
-        });
-        
-        // Initialize based on current value
-        if (sendToSelect.value === 'specific') {
-            customerSelectContainer.style.display = 'block';
-        }
-    });
+document.addEventListener('DOMContentLoaded', function() {
+    // Toggle customer selection based on "Send To"
+    const sendToSelect = document.getElementById('send_to');
+    const customerSelectContainer = document.getElementById('customer-select-container');
+
+    function toggleCustomerSelect() {
+        customerSelectContainer.style.display = sendToSelect.value === 'specific' ? 'block' : 'none';
+    }
+
+    sendToSelect.addEventListener('change', toggleCustomerSelect);
+    toggleCustomerSelect(); // initial check
+
+    // Initialize Select2 for customer dropdown
+    const select2Elements = document.querySelectorAll('.select2');
+    select2Elements.forEach(el => $(el).select2({ width: '100%' }));
+});
 </script>
-{% endblock %}
 {% endblock %}

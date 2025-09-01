@@ -503,19 +503,25 @@ class RouterManager:
             try:
                 # The name element inside the profile card
                 name_elem = profile.find_element(By.CSS_SELECTOR, "div.text div:first-child")
-                if name_elem.text.strip() == profile_name:
+
+                # Normalize text (remove newlines & extra spaces)
+                ui_name = " ".join(name_elem.text.split()).strip()
+                target_name = profile_name.strip()
+
+                # Match either exact or startswith
+                if ui_name == target_name or ui_name.startswith(target_name):
                     # Scroll into view
                     driver.execute_script("arguments[0].scrollIntoView(true);", profile)
                     # Click the profile
                     name_elem.click()
-                    print(f"[RouterManager] Clicked profile '{profile_name}'")
+                    print(f"[RouterManager] Clicked profile '{ui_name}'")
 
                     # Wait until Assigned Devices section loads
                     try:
                         wait.until(EC.presence_of_element_located(
                             (By.XPATH, "//div[contains(text(),'Assigned Devices') or contains(text(),'Devices')]")
                         ))
-                        # Save screenshot of the profile details page
+                        # Save screenshot
                         driver.save_screenshot(screenshot_name)
                         print(f"[RouterManager] Screenshot saved as '{screenshot_name}'")
                     except TimeoutException:
@@ -532,11 +538,49 @@ class RouterManager:
         print(f"[RouterManager] Profile '{profile_name}' not found.")
         return False
 
+    
+    
+    
+    
+    
+    
+    def get_devices_for_profile(self, profile_name):
+        """
+        Fetch assigned devices inside a given family profile.
+        Returns a list of dicts: [{name, mac_address, ip}]
+        """
+        devices = []
+        if not self.open_profile_details(profile_name):
+            return devices
+
+        driver = self.driver
+        time.sleep(2)
+
+        try:
+            rows = driver.find_elements(By.CSS_SELECTOR, "tbody tr, .device-row, .client-row")
+            for row in rows:
+                try:
+                    cells = row.find_elements(By.TAG_NAME, "td")
+                    if len(cells) >= 3:
+                        devices.append({
+                            "name": cells[0].text.strip(),
+                            "mac_address": cells[1].text.strip(),
+                            "ip": cells[2].text.strip()
+                        })
+                except:
+                    continue
+        except Exception as e:
+            print(f"[RouterManager] Error fetching devices for profile {profile_name}: {e}")
+
+        return devices
+
+
 
 
     def toggle_internet_in_profile(self, profile_name, enable=True):
         """
-        Enable or disable internet for a given profile.
+        Enable or disable Internet for a given profile using the profile details page.
+        Works for the <pv-toggle> element in the profile details page.
         """
         print(f"[RouterManager] Setting internet {'ON' if enable else 'OFF'} for profile '{profile_name}'")
 
@@ -549,13 +593,18 @@ class RouterManager:
         wait = WebDriverWait(driver, 10)
 
         try:
-            # Wait for the toggle switch
+            # Wait for the toggle switch inside <pv-toggle>
             toggle = wait.until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, "label.switch input[type='checkbox']"))
+                EC.presence_of_element_located((By.CSS_SELECTOR, "pv-toggle input[type='checkbox']"))
             )
 
+            # Scroll into view
+            driver.execute_script("arguments[0].scrollIntoView(true);", toggle)
+
+            # Check current status
             current_status = toggle.is_selected()
             if (enable and not current_status) or (not enable and current_status):
+                # Use JS click for reliability
                 driver.execute_script("arguments[0].click();", toggle)
                 print(f"[RouterManager] Internet {'enabled' if enable else 'disabled'} successfully.")
             else:
@@ -566,7 +615,6 @@ class RouterManager:
         except TimeoutException:
             print("[RouterManager] Toggle not found in profile details page.")
             return False
-
 
 
 
@@ -584,53 +632,71 @@ if __name__ == "__main__":
     if router.ensure_login():
         print("✓ Login successful\n")
         
-        # Device summary
+        # --- Device Summary ---
         print("=== Getting device summary ===")
-        summary = router.get_device_summary()
-        print(f"Device Summary: {summary}\n")
-        
-        # Connected devices
+        try:
+            summary = router.get_device_summary()
+            print(f"Device Summary: {summary}\n")
+        except Exception as e:
+            print(f"❌ Failed to get device summary: {e}\n")
+
+        # --- Connected Devices ---
         print("=== Getting connected devices ===")
-        devices = router.get_connected_devices()
-        if devices:
-            for d in devices:
-                print(f" - {d.get('name','Unknown')} | MAC: {d.get('mac_address','N/A')} | IP: {d.get('ipv4','N/A')}")
-        else:
-            print("No devices found.\n")
-        
-        # Family profiles
+        try:
+            devices = router.get_connected_devices()
+            if devices:
+                for d in devices:
+                    print(f" - {d.get('name','Unknown')} | MAC: {d.get('mac_address','N/A')} | IP: {d.get('ipv4','N/A')}")
+            else:
+                print("No devices found.\n")
+        except Exception as e:
+            print(f"❌ Failed to get connected devices: {e}\n")
+
+        # --- Family Profiles ---
         print("\n=== Getting family profiles ===")
-        profiles = router.get_family_profiles()
-        if not profiles:
-            print("No family profiles found.\n")
-        else:
-            for p in profiles:
-                # Fetch assigned devices for each profile
-                devices_for_profile = router.get_devices_for_profile(p['name'])
-                p['assigned_devices'] = devices_for_profile
+        try:
+            profiles = router.get_family_profiles()
+            if not profiles:
+                print("No family profiles found.\n")
+            else:
+                for p in profiles:
+                    # Fetch assigned devices for each profile
+                    try:
+                        devices_for_profile = router.get_devices_for_profile(p['name'])
+                        p['assigned_devices'] = devices_for_profile
 
-                print(f"\nProfile: {p['name']} | Status: {p['status']} | Device Count: {len(devices_for_profile)}")
-                if devices_for_profile:
-                    for d in devices_for_profile:
-                        print(f"   - {d.get('name', 'Unknown')} ({d.get('mac_address', 'No MAC')})")
-                else:
-                    print("   (No devices assigned)")
+                        print(f"\nProfile: {p['name']} | Status: {p['status']} | Device Count: {len(devices_for_profile)}")
+                        if devices_for_profile:
+                            for d in devices_for_profile:
+                                print(f"   - {d.get('name', 'Unknown')} ({d.get('mac_address', 'No MAC')})")
+                        else:
+                            print("   (No devices assigned)")
+                    except Exception as e:
+                        print(f"❌ Failed to fetch devices for profile {p['name']}: {e}")
+        except Exception as e:
+            print(f"❌ Failed to get family profiles: {e}\n")
 
-        # Pick a profile to test internet toggle
-        profile_name = "Afnan"  # Replace with your actual profile name
+        # --- Internet Toggle Test ---
+        profile_name = "Home"  # Replace with your actual profile name
         print(f"\n=== Opening profile details for '{profile_name}' ===")
         if router.open_profile_details(profile_name):
             print(f"✅ Successfully navigated to profile details for '{profile_name}'\n")
             
             # Enable Internet
             print(f"=== Enabling internet for '{profile_name}' ===")
-            success = router.toggle_internet_in_profile(profile_name, enable=True)
-            print(f"Internet access for profile '{profile_name}' set to Enabled: {success}\n")
-            
+            try:
+                success = router.toggle_internet_in_profile(profile_name, enable=True)
+                print(f"Internet access for profile '{profile_name}' set to Enabled: {success}\n")
+            except Exception as e:
+                print(f"❌ Failed to enable internet for {profile_name}: {e}")
+
             # Disable Internet
             print(f"=== Disabling internet for '{profile_name}' ===")
-            success = router.toggle_internet_in_profile(profile_name, enable=False)
-            print(f"Internet access for profile '{profile_name}' set to Disabled: {success}\n")
+            try:
+                success = router.toggle_internet_in_profile(profile_name, enable=False)
+                print(f"Internet access for profile '{profile_name}' set to Disabled: {success}\n")
+            except Exception as e:
+                print(f"❌ Failed to disable internet for {profile_name}: {e}")
         else:
             print(f"❌ Failed to open profile details for '{profile_name}'\n")
         

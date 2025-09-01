@@ -1,21 +1,112 @@
 {% extends "base.html" %}
 
+{% block extra_css %}
+<style>
+/* --- Card Styling --- */
+.card {
+    border-radius: 15px;
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+}
+
+/* --- Table Styling --- */
+.table {
+    border-radius: 10px;
+    overflow: hidden;
+}
+.table thead th {
+    background: linear-gradient(135deg, #6a11cb, #2575fc);
+    color: #fff;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.table tbody tr {
+    transition: background 0.2s, transform 0.2s;
+}
+.table tbody tr:hover {
+    background-color: rgba(0,123,255,0.1);
+    transform: scale(1.02);
+}
+.table td, .table th {
+    vertical-align: middle !important;
+    text-align: center;
+}
+
+/* --- Status Badges --- */
+.badge-online {
+    background-color: #28a745;
+    color: #fff;
+    padding: 0.35em 0.6em;
+    border-radius: 50px;
+    font-weight: 500;
+}
+.badge-offline {
+    background-color: #6c757d;
+    color: #fff;
+    padding: 0.35em 0.6em;
+    border-radius: 50px;
+    font-weight: 500;
+}
+.badge-blocked {
+    background-color: #dc3545;
+    color: #fff;
+    padding: 0.35em 0.6em;
+    border-radius: 50px;
+    font-weight: 500;
+}
+
+/* --- Header and Buttons --- */
+h2 {
+    color: #0072ff;
+    font-weight: bold;
+}
+.btn-outline-primary {
+    border-radius: 50px;
+    transition: all 0.2s;
+}
+.btn-outline-primary:hover {
+    background: #0072ff;
+    color: #fff;
+    border-color: #0072ff;
+}
+
+/* --- Responsive Adjustments --- */
+@media (max-width: 768px) {
+    .table thead th {
+        font-size: 0.8rem;
+    }
+    h2 {
+        font-size: 1.5rem;
+    }
+    .badge-online, .badge-offline, .badge-blocked {
+        font-size: 0.7rem;
+        padding: 0.3em 0.5em;
+    }
+}
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>Connected Devices</h2>
-    <a href="{{ url_for('dashboard') }}" class="btn btn-outline-primary">Back to Dashboard</a>
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+    <h2 class="fw-bold">Connected Devices</h2>
+    <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-primary mt-2 mt-md-0">Back to Dashboard</a>
 </div>
 
-<div class="card">
-    <div class="card-header">
+<div class="card shadow-sm">
+    <div class="card-header bg-gradient-primary text-white">
         <div class="d-flex justify-content-between align-items-center">
             <h5 class="mb-0">All Devices</h5>
-            <span class="badge bg-primary">{{ devices|length }} devices</span>
+            <span class="badge badge-light-custom">{{ devices|length }} devices</span>
         </div>
     </div>
-    <div class="card-body">
+    <div class="card-body p-0">
         <div class="table-responsive">
-            <table class="table table-hover" id="devices-table">
+            <table class="table table-hover align-middle mb-0">
                 <thead>
                     <tr>
                         <th>Device Name</th>
@@ -32,29 +123,19 @@
                             <td><code>{{ device.mac_address }}</code></td>
                             <td>{{ device.ip_address or 'N/A' }}</td>
                             <td>
-                                <span class="device-status {% if device.is_blocked %}blocked{% elif device.is_online %}online{% else %}offline{% endif %}"></span>
                                 {% if device.is_blocked %}
-                                    Blocked
-                                {% elif device.is_online %}
-                                    Online
+                                    <span class="badge-blocked">Blocked</span>
+                                {% elif device.last_seen and (device.last_seen.utcnow() - device.last_seen.replace(tzinfo=None)).total_seconds() < 300 %}
+                                    <span class="badge-online">Online</span>
                                 {% else %}
-                                    Offline
+                                    <span class="badge-offline">Offline</span>
                                 {% endif %}
                             </td>
                             <td>{{ device.last_seen.strftime('%Y-%m-%d %H:%M') if device.last_seen else "Never" }}</td>
-                            <td>
-                                {% if device.is_blocked %}
-                                    <button class="btn btn-success btn-sm"
-                                            onclick="toggleDevice('{{ device.mac_address }}', 'unblock')">Unblock</button>
-                                {% else %}
-                                    <button class="btn btn-danger btn-sm"
-                                            onclick="toggleDevice('{{ device.mac_address }}', 'block')">Block</button>
-                                {% endif %}
-                            </td>
                         </tr>
                     {% else %}
                         <tr>
-                            <td colspan="6" class="text-center">No devices found</td>
+                            <td colspan="5" class="text-center text-muted py-3">No devices found</td>
                         </tr>
                     {% endfor %}
                 </tbody>
@@ -62,23 +143,4 @@
         </div>
     </div>
 </div>
-
-<!-- AJAX Script -->
-<script>
-async function toggleDevice(mac, action) {
-    let url = `/api/${action}_device/${mac}`;
-    try {
-        let response = await fetch(url, { method: "POST" });
-        let result = await response.json();
-        if (result.status === "success") {
-            alert(result.message);
-            location.reload(); // Refresh table to show updated status
-        } else {
-            alert("Failed: " + result.message);
-        }
-    } catch (err) {
-        alert("Error: " + err);
-    }
-}
-</script>
 {% endblock %}

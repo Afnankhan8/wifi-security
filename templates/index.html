@@ -1,49 +1,109 @@
 {% extends "base.html" %}
 
 {% block content %}
+<style>
+    body {
+        background: linear-gradient(135deg, #1A237E 0%, #0D47A1 100%);
+        color: #E3F2FD;
+    }
+
+    .hero-section {
+        background-color: rgba(0, 0, 0, 0.4);
+        padding: 6rem 0;
+        border-radius: 15px;
+    }
+
+    .card {
+        background-color: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(10px);
+        transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+    }
+
+    .card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .card-body .bi {
+        font-size: 3rem !important;
+        color: #4DD0E1 !important;
+        animation: pulse 2s infinite;
+    }
+    
+    .btn-primary {
+        background-color: #4DD0E1;
+        border-color: #4DD0E1;
+        transition: background-color 0.3s ease-in-out, transform 0.2s;
+    }
+    
+    .btn-primary:hover {
+        background-color: #26C6DA;
+        border-color: #26C6DA;
+        transform: translateY(-2px);
+    }
+
+    .btn-outline-secondary {
+        color: #E3F2FD;
+        border-color: #E3F2FD;
+        transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out;
+    }
+    
+    .btn-outline-secondary:hover {
+        background-color: #E3F2FD;
+        color: #1A237E;
+    }
+    
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+    }
+</style>
+
 <div class="row justify-content-center">
-    <div class="col-lg-8 text-center">
-        <h1 class="display-4 mb-4">Airtel Airfiber Wi-Fi Management</h1>
-        <p class="lead mb-5">Advanced network monitoring and device management for your Airtel Airfiber connection</p>
+    <div class="col-lg-10 text-center hero-section">
+        <h1 class="display-3 fw-bold mb-4">Wi-Fi Security</h1>
+        <p class="lead mb-5 text-white-50">Advanced network monitoring and device management for a secure Wi-Fi connection</p>
         
         {% if not current_user.is_authenticated %}
             <div class="d-grid gap-3 d-sm-flex justify-content-sm-center">
-                <a href="{{ url_for('login') }}" class="btn btn-primary btn-lg px-4 gap-3">Login</a>
-                <a href="{{ url_for('register') }}" class="btn btn-outline-secondary btn-lg px-4">Register</a>
+                <a href="{{ url_for('login') }}" class="btn btn-primary btn-lg px-5 py-3 shadow-sm">Login</a>
+                <a href="{{ url_for('register') }}" class="btn btn-outline-secondary btn-lg px-5 py-3">Register</a>
             </div>
         {% else %}
             <div class="d-grid gap-3 d-sm-flex justify-content-sm-center">
-                <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-lg px-4 gap-3">Go to Dashboard</a>
+                <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-lg px-5 py-3 shadow-sm">Go to Dashboard</a>
             </div>
         {% endif %}
     </div>
 </div>
 
-<div class="row mt-5">
+<div class="row mt-5 pt-3">
     <div class="col-lg-4 mb-4">
-        <div class="card h-100">
+        <div class="card h-100 text-white border-0">
             <div class="card-body text-center">
-                <i class="bi bi-wifi text-primary" style="font-size: 2rem;"></i>
-                <h3 class="card-title mt-3">Real-time Monitoring</h3>
-                <p class="card-text">Track all connected devices in real-time with detailed information about each device.</p>
+                <i class="bi bi-wifi text-info"></i>
+                <h3 class="card-title mt-3 fw-bold">Real-time Monitoring</h3>
+                <p class="card-text text-white-50">Track all connected devices in real-time with detailed information about each device.</p>
             </div>
         </div>
     </div>
     <div class="col-lg-4 mb-4">
-        <div class="card h-100">
+        <div class="card h-100 text-white border-0">
             <div class="card-body text-center">
-                <i class="bi bi-shield-lock text-primary" style="font-size: 2rem;"></i>
-                <h3 class="card-title mt-3">Security Management</h3>
-                <p class="card-text">Block or unblock devices with a single click to maintain network security.</p>
+                <i class="bi bi-shield-lock text-info"></i>
+                <h3 class="card-title mt-3 fw-bold">Security Management</h3>
+                <p class="card-text text-white-50">Block or unblock devices with a single click to maintain network security.</p>
             </div>
         </div>
     </div>
     <div class="col-lg-4 mb-4">
-        <div class="card h-100">
+        <div class="card h-100 text-white border-0">
             <div class="card-body text-center">
-                <i class="bi bi-bell text-primary" style="font-size: 2rem;"></i>
-                <h3 class="card-title mt-3">Instant Alerts</h3>
-                <p class="card-text">Receive notifications for new devices, suspicious activities, and more.</p>
+                <i class="bi bi-bell text-info"></i>
+                <h3 class="card-title mt-3 fw-bold">Instant Alerts</h3>
+                <p class="card-text text-white-50">Receive notifications for new devices, suspicious activities, and more.</p>
             </div>
         </div>
     </div>

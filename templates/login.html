@@ -1,11 +1,92 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-lg-6">
-        <div class="card">
-            <div class="card-header bg-primary text-white">
-                <h3 class="mb-0">Login</h3>
+<style>
+    body {
+        background: linear-gradient(135deg, #1A237E 0%, #0D47A1 100%);
+        color: #E3F2FD;
+    }
+    .card {
+        background-color: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(10px);
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        border-radius: 15px;
+        transition: transform 0.3s ease-in-out;
+    }
+    .card:hover {
+        transform: translateY(-5px);
+    }
+    .card-header {
+        background-color: transparent !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        color: #E3F2FD !important;
+        text-align: center;
+        padding: 1.5rem;
+    }
+    .card-header h3 {
+        font-weight: bold;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    }
+    .form-label {
+        color: #B0BEC5;
+        font-weight: 500;
+    }
+    .form-control {
+        background-color: rgba(255, 255, 255, 0.15);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        color: #E3F2FD;
+        border-radius: 8px;
+        transition: background-color 0.3s ease, border-color 0.3s ease;
+    }
+    .form-control:focus {
+        background-color: rgba(255, 255, 255, 0.25);
+        border-color: #4DD0E1;
+        box-shadow: 0 0 0 0.25rem rgba(77, 208, 225, 0.5);
+    }
+    .form-check-input {
+        background-color: rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        transition: all 0.2s ease;
+    }
+    .form-check-input:checked {
+        background-color: #4DD0E1;
+        border-color: #4DD0E1;
+    }
+    .btn-primary {
+        background-color: #4DD0E1;
+        border-color: #4DD0E1;
+        font-weight: bold;
+        transition: background-color 0.3s ease-in-out, transform 0.2s;
+        box-shadow: 0 4px 10px rgba(77, 208, 225, 0.4);
+    }
+    .btn-primary:hover {
+        background-color: #26C6DA;
+        border-color: #26C6DA;
+        transform: translateY(-2px);
+    }
+    .invalid-feedback {
+        color: #EF5350;
+        font-size: 0.875rem;
+    }
+    a {
+        color: #4DD0E1;
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+    a:hover {
+        color: #26C6DA;
+    }
+    p {
+        color: #B0BEC5;
+    }
+</style>
+
+<div class="row justify-content-center mt-5">
+    <div class="col-lg-5 col-md-8">
+        <div class="card p-4">
+            <div class="card-header">
+                <h3 class="mb-0">Secure Login</h3>
             </div>
             <div class="card-body">
                 <form method="POST" action="{{ url_for('login') }}">
@@ -32,12 +113,12 @@
                         {{ form.remember_me.label(class="form-check-label") }}
                     </div>
                     
-                    <div class="d-grid">
-                        {{ form.submit(class="btn btn-primary") }}
+                    <div class="d-grid mt-4">
+                        {{ form.submit(class="btn btn-primary py-2") }}
                     </div>
                 </form>
                 
-                <div class="mt-3 text-center">
+                <div class="mt-4 text-center">
                     <p>Don't have an account? <a href="{{ url_for('register') }}">Register here</a></p>
                 </div>
             </div>
